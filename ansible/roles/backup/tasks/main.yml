@@ -1,0 +1,2 @@
+- name: Programar backups automáticos
+  shell: kubectl apply -f roles/backup/tasks/logging.yml

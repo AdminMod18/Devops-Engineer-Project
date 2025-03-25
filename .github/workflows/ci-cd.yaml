@@ -1,0 +1,115 @@
+name: CI/CD Pipeline
+
+# Trigger cuando haya un push o pull_request a la rama 'main'
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Jobs de la pipeline
+jobs:
+  # Job para la parte de infraestructura con Terraform
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v2
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 1.0.0
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Plan
+      run: terraform plan
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
+
+  # Job para construcción de contenedor Docker
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v2
+
+    - name: Log in to Docker (local)
+      run: |
+        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+
+    - name: Build Docker image
+      run: |
+        docker build -t myapp .
+
+    - name: Push Docker image to DockerHub (opcional si se usa Docker Hub)
+      run: |
+        docker push myapp
+
+  # Job para ejecución de pruebas de integración
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v1
+
+    - name: Run Tests
+      run: |
+        docker-compose -f docker-compose.test.yml up --build
+        docker-compose -f docker-compose.test.yml down
+
+  # Job para la automatización con Ansible
+  ansible:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v2
+
+    - name: Set up Ansible
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ansible
+
+    - name: Run Ansible Playbook
+      run: |
+        ansible-playbook -i inventory playbook.yml
+
+  # Job para la gestión de Kubernetes (Local)
+  kubernetes:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v2
+
+    - name: Set up kubectl (local)
+      uses: azure/setup-kubectl@v1
+
+    - name: Configure Kubernetes Cluster
+      run: |
+        kubectl apply -f k8s/
+
+  # Job para limpieza de la infraestructura en caso de pruebas fallidas (opcional)
+  cleanup:
+    runs-on: ubuntu-latest
+
+    if: failure()  # Solo se ejecuta si la pipeline falla en alguno de los trabajos anteriores
+
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v2
+
+    - name: Terraform Destroy
+      run: terraform destroy -auto-approve

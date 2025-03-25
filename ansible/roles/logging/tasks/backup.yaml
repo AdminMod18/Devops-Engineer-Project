@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-job
+  namespace: default
+spec:
+  schedule: "0 3 * * *"  # Se ejecuta todos los días a las 3 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: backup
+              image: bitnami/kubectl
+              command:
+                - "/bin/sh"
+                - "-c"
+                - "kubectl get all -o yaml > /backup/k8s-backup-$(date +%F).yaml"
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backup
+          volumes:
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: backup-pvc
+          restartPolicy: OnFailure

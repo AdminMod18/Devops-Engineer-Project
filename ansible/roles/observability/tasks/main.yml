@@ -1,0 +1,2 @@
+- name: Instalar OpenTelemetry
+  shell: kubectl apply -f  roles/observability/tasks/observability.yaml

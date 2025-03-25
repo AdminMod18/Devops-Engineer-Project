@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opentelemetry-collector
+  labels:
+    app: opentelemetry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opentelemetry
+  template:
+    metadata:
+      labels:
+        app: opentelemetry
+    spec:
+      containers:
+        - name: opentelemetry-collector
+          image: otel/opentelemetry-collector-contrib:latest
+          ports:
+            - containerPort: 55680  # puerto para OTLP
+            - containerPort: 4317   # puerto para gRPC
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/otel
+              readOnly: true
+      volumes:
+        - name: config-volume
+          configMap:
+            name: opentelemetry-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opentelemetry-config
+  labels:
+    app: opentelemetry
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    exporters:
+      logging:
+        loglevel: debug
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          exporters: [logging]

@@ -1,0 +1,2 @@
+- name: Configurar HashiCorp Vault
+  shell: kubectl apply -f roles/secrets_management/tasks/secrets.yaml

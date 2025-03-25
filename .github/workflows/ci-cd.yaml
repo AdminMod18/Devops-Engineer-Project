@@ -41,7 +41,7 @@ jobs:
     - name: Check out the code
       uses: actions/checkout@v2
 
-    - name: Log in to Docker (local)
+    - name: Log in to Docker
       run: |
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
 
@@ -49,7 +49,7 @@ jobs:
       run: |
         docker build -t myapp .
 
-    - name: Push Docker image to DockerHub (opcional si se usa Docker Hub)
+    - name: Push Docker image to DockerHub
       run: |
         docker push myapp
 
@@ -94,14 +94,17 @@ jobs:
     - name: Check out the code
       uses: actions/checkout@v2
 
-    - name: Set up kubectl (local)
+    - name: Set up kubectl
       uses: azure/setup-kubectl@v1
 
     - name: Configure Kubernetes Cluster
       run: |
         kubectl apply -f k8s/
 
-  # Job para limpieza de la infraestructura en caso de pruebas fallidas (opcional)
+    - name: Check Kubernetes Pods
+      run: kubectl get pods
+
+  # Job para limpieza de la infraestructura en caso de pruebas fallidas
   cleanup:
     runs-on: ubuntu-latest
 

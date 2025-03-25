@@ -1,0 +1,2 @@
+- name: Configurar permisos y secretos
+  shell: kubectl apply -f roles/security/tasks/security.yml

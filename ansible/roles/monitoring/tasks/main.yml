@@ -1,0 +1,2 @@
+- name: Instalar Prometheus y Grafana
+  shell: kubectl apply -f roles/monitoring/tasks/monitoring.yml

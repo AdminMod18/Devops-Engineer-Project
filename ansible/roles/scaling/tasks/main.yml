@@ -1,0 +1,2 @@
+- name: Configurar HPA
+  shell: kubectl apply -f roles/scaling/tasks/scaling.yaml

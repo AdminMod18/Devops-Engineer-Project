@@ -1,0 +1,18 @@
+- name: Configurar Kubernetes y Desplegar Servicios
+  hosts: local
+  roles:
+    - setup_env
+    - deploy_auth
+    - deploy_user
+    - monitoring
+    - networking
+    - database
+    - security
+    - logging
+    - backup
+    - scaling
+    - ci_cd
+    - rollback
+    - observability
+    - load_balancing
+    - secrets_management

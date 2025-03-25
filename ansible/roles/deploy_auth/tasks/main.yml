@@ -1,0 +1,5 @@
+- name: Construir imagen de Auth Service
+  shell: docker build -t auth-service:v1 ../servicios/auth-service/
+
+- name: Aplicar configuración en Kubernetes
+  shell:  kubectl apply -f ../servicios/auth-service/app/kubernetes/

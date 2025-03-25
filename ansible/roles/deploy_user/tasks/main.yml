@@ -1,0 +1,5 @@
+- name: Construir imagen de User Service
+  shell: docker build -t user-service:v1 ../servicios/user-service/
+
+- name: Aplicar configuración en Kubernetes
+  shell:  kubectl apply -f ../servicios/auth-service/app/kubernetes/

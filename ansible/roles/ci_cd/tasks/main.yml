@@ -1,0 +1,2 @@
+- name: Configurar GitHub Actions Runner
+  shell: kubectl apply -f roles/ci_cd/tasks/cicd.yaml

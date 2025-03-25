@@ -1,0 +1,2 @@
+- name: Configurar LoadBalancer en Kubernetes
+  shell: kubectl apply -f roles/load_balancing/tasks/load_balancing.yaml

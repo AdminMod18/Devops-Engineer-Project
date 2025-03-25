@@ -1,0 +1,4 @@
+- name: Instalar Kubernetes y dependencias
+  shell: |
+    sudo apt install -y kubectl
+    minikube start

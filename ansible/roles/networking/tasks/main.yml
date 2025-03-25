@@ -1,0 +1,2 @@
+- name: Configurar Ingress Controller
+  shell: kubectl apply -f roles/networking/tasks/ingress.yml

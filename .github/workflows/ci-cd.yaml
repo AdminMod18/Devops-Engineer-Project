@@ -17,7 +17,7 @@ jobs:
 
       - name: Verify Terraform files exist
         run: |
-          if [ ! -f "main.tf" ]; then
+          if [ ! -f "terraform/main.tf" ]; then
             echo "Terraform configuration files not found!"
             exit 1
           fi
@@ -28,14 +28,13 @@ jobs:
           terraform_version: 1.0.0
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -chdir=terraform
 
       - name: Terraform Plan
-        run: terraform plan
+        run: terraform plan -chdir=terraform
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve
-
+        run: terraform apply -auto-approve -chdir=terraform
   docker:
     runs-on: ubuntu-latest
     steps:

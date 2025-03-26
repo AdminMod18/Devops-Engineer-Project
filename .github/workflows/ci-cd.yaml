@@ -17,11 +17,10 @@ jobs:
 
       - name: Verify Terraform files exist
         run: |
-          if [ ! -f "terraform/main.tf" ]; then
+          if [ ! -f "main.tf" ]; then
             echo "Terraform configuration files not found!"
             exit 1
           fi
-        continue-on-error: true
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v1
@@ -29,15 +28,12 @@ jobs:
           terraform_version: 1.0.0
 
       - name: Terraform Init
-        working-directory: terraform
         run: terraform init
 
       - name: Terraform Plan
-        working-directory: terraform
         run: terraform plan
 
       - name: Terraform Apply
-        working-directory: terraform
         run: terraform apply -auto-approve
 
   docker:
@@ -49,16 +45,13 @@ jobs:
       - name: Install Docker-Compose
         run: sudo apt-get update && sudo apt-get install -y docker-compose
 
-      - name: Validate Docker Credentials
+      - name: Log in to Docker
         run: |
-          if [[ -z "${{ secrets.DOCKER_USERNAME }}" || -z "${{ secrets.DOCKER_PASSWORD }}" ]]; then
+          if [[ -z "$DOCKER_USERNAME" || -z "$DOCKER_PASSWORD" ]]; then
             echo "Docker credentials not set"
             exit 1
           fi
-        continue-on-error: true
-
-      - name: Log in to Docker
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
       - name: Build Docker image
         run: docker build -t myapp .
@@ -75,18 +68,25 @@ jobs:
       - name: Install Docker-Compose
         run: sudo apt-get update && sudo apt-get install -y docker-compose
 
-      - name: Verify Test Configuration File
-        run: |
-          if [ ! -f "docker/docker-compose.test.yml" ]; then
-            echo "Test docker-compose file not found!"
-            exit 1
-          fi
-        continue-on-error: true
-
       - name: Run Tests
         run: |
-          docker-compose -f docker/docker-compose.test.yml up --build
-          docker-compose -f docker/docker-compose.test.yml down
+          docker-compose -f docker-compose.test.yml up --build
+          docker-compose -f docker-compose.test.yml down
+
+  ansible:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v2
+
+      - name: Set up Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Run Ansible Playbook
+        run: |
+          ansible-playbook -i ansible/hosts.ini ansible/playbook.yml || echo "Ansible playbook failed, but continuing."
 
   kubernetes:
     runs-on: ubuntu-latest
@@ -94,13 +94,12 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v2
 
-      - name: Verify Kubernetes Directory
+      - name: Verify k8s directory
         run: |
           if [ ! -d "k8s/" ]; then
             echo "Directory k8s/ not found!"
             exit 1
           fi
-        continue-on-error: true
 
       - name: Install Minikube
         run: |
@@ -116,8 +115,21 @@ jobs:
         with:
           version: 'latest'
 
+      - name: Verify Minikube Cluster
+        run: kubectl cluster-info || (echo "Minikube not ready, retrying..." && sleep 10 && kubectl cluster-info)
+
       - name: Apply Kubernetes Configurations
         run: kubectl apply -f k8s/ --validate=false
 
       - name: Check Kubernetes Pods
         run: kubectl get pods -A
+
+  cleanup:
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v2
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve

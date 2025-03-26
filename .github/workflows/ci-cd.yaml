@@ -11,6 +11,7 @@ on:
 jobs:
   # 1. Validaciones básicas y pruebas estáticas
   validate:
+    validate:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
@@ -28,7 +29,8 @@ jobs:
 
       - name: Ensure correct file permissions for plugins
         run: |
-          chmod -R +x .terraform/providers
+          cd terraform
+          chmod -R +x .terraform/providers || echo "No providers directory, skipping chmod"
 
       - name: Format Terraform files
         run: |

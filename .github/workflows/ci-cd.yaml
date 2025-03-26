@@ -29,13 +29,18 @@ jobs:
           minikube start --driver=docker
           echo "✅ Minikube installed and started"
 
-      - name: Export Minikube credentials
+      - name: Wait for Kubernetes to be Ready
         run: |
-          mkdir -p $HOME/.minikube/profiles/minikube
-          minikube kubectl -- config view --raw > $HOME/.kube/config
-          echo "export KUBE_CERTIFICATE_AUTHORITY=$(cat $HOME/.minikube/ca.crt | base64 -w 0)" >> $GITHUB_ENV
-          echo "export KUBE_CLIENT_CERTIFICATE=$(cat $HOME/.minikube/profiles/minikube/client.crt | base64 -w 0)" >> $GITHUB_ENV
-          echo "export KUBE_CLIENT_KEY=$(cat $HOME/.minikube/profiles/minikube/client.key | base64 -w 0)" >> $GITHUB_ENV
+          echo "⏳ Waiting for Kubernetes to be ready..."
+          for i in {1..10}; do
+            kubectl get nodes && break
+            echo "Retrying in 10 seconds..."
+            sleep 10
+          done
+
+      - name: Check Kubernetes Status
+        run: |
+          kubectl cluster-info || (echo "⚠️ Kubernetes is not running!"; exit 1)
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v1
@@ -72,13 +77,7 @@ jobs:
         run: |
           cd terraform
           terraform apply -auto-approve tfplan
-        env:
-          TF_VAR_client_certificate: ${{ env.KUBE_CLIENT_CERTIFICATE }}
-          TF_VAR_client_key: ${{ env.KUBE_CLIENT_KEY }}
-          TF_VAR_cluster_ca_certificate: ${{ env.KUBE_CERTIFICATE_AUTHORITY }}
-      - name: Check Kubernetes Status
-        run: |
-          kubectl cluster-info || (echo "⚠️ Kubernetes is not running!"; exit 1)
+
 
   docker:
     runs-on: ubuntu-latest

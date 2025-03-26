@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Verify Terraform directory exists
         run: |
@@ -27,24 +27,25 @@ jobs:
         with:
           terraform_version: 1.0.0
 
-      - name: Format and Validate Terraform files
-        run: |
-          cd terraform
-          terraform fmt -recursive
-          terraform validate
+      - name: Initialize Terraform
+        run: terraform init -upgrade -chdir=terraform
 
-      - name: Terraform Init
-        run: terraform init -chdir=terraform
+      - name: Fix plugin permissions
+        run: |
+          chmod -R +x terraform/.terraform
+
+      - name: Format Terraform files
+        run: terraform fmt -recursive -chdir=terraform
+
+      - name: Validate Terraform configuration
+        run: terraform validate -chdir=terraform
 
       - name: Terraform Plan
-        run: |
-          cd terraform
-          terraform plan -out=tfplan
+        run: terraform plan -out=tfplan -chdir=terraform
 
       - name: Terraform Apply
-        run: |
-          cd terraform
-          terraform apply -auto-approve tfplan
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan -chdir=terraform
   docker:
     runs-on: ubuntu-latest
     steps:

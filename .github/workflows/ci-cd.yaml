@@ -28,7 +28,9 @@ jobs:
           terraform_version: 1.0.0
 
       - name: Validate Terraform files
-        run: terraform fmt -check -recursive -chdir=terraform
+        run: |
+          cd terraform
+          terraform fmt -check -recursive
 
       - name: Terraform Init
         run: terraform init -chdir=terraform

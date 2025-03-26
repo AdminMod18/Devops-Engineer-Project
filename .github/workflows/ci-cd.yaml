@@ -16,13 +16,6 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v3
 
-      - name: Verify Terraform directory exists
-        run: |
-          if [ ! -d "terraform" ]; then
-            echo "❌ Terraform directory not found!"
-            exit 1
-          fi
-
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v1
         with:
@@ -32,6 +25,10 @@ jobs:
         run: |
           cd terraform
           terraform init -upgrade
+
+      - name: Ensure correct file permissions for plugins
+        run: |
+          chmod -R +x .terraform/providers
 
       - name: Format Terraform files
         run: |

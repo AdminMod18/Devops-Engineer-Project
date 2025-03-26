@@ -33,6 +33,11 @@ jobs:
           cd terraform
           terraform init -upgrade
 
+      - name: Fix plugin permissions (Terraform Providers)
+        run: |
+          chmod -R +x terraform/.terraform
+          chmod -R +x terraform/.terraform/providers
+
       - name: Format Terraform files
         run: |
           cd terraform

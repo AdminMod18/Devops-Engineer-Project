@@ -18,7 +18,7 @@ jobs:
       - name: Verify Terraform directory exists
         run: |
           if [ ! -d "terraform" ]; then
-            echo "Terraform directory not found!"
+            echo "❌ Terraform directory not found!"
             exit 1
           fi
 
@@ -28,24 +28,34 @@ jobs:
           terraform_version: 1.0.0
 
       - name: Initialize Terraform
-        run: terraform init -upgrade -chdir=terraform
+        run: |
+          cd terraform
+          terraform init -upgrade
 
       - name: Fix plugin permissions
         run: |
           chmod -R +x terraform/.terraform
 
       - name: Format Terraform files
-        run: terraform fmt -recursive -chdir=terraform
+        run: |
+          cd terraform
+          terraform fmt -recursive
 
       - name: Validate Terraform configuration
-        run: terraform validate -chdir=terraform
+        run: |
+          cd terraform
+          terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan -chdir=terraform
+        run: |
+          cd terraform
+          terraform plan -out=tfplan
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve tfplan -chdir=terraform
+        run: |
+          cd terraform
+          terraform apply -auto-approve tfplan
   docker:
     runs-on: ubuntu-latest
     steps:

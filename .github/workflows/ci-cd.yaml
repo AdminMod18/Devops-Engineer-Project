@@ -14,7 +14,6 @@ jobs:
   # Job para la parte de infraestructura con Terraform
   terraform:
     runs-on: ubuntu-latest
-
     steps:
     - name: Check out the code
       uses: actions/checkout@v2
@@ -36,7 +35,6 @@ jobs:
   # Job para construcción de contenedor Docker
   docker:
     runs-on: ubuntu-latest
-
     steps:
     - name: Check out the code
       uses: actions/checkout@v2
@@ -56,7 +54,6 @@ jobs:
   # Job para ejecución de pruebas de integración
   test:
     runs-on: ubuntu-latest
-
     steps:
     - name: Check out the code
       uses: actions/checkout@v2
@@ -72,7 +69,6 @@ jobs:
   # Job para la automatización con Ansible
   ansible:
     runs-on: ubuntu-latest
-
     steps:
     - name: Check out the code
       uses: actions/checkout@v2
@@ -86,30 +82,40 @@ jobs:
       run: |
         ansible-playbook -i ansible/hosts.ini ansible/playbook.yml
 
-  # Job para la gestión de Kubernetes (Local)
+  # Job para la gestión de Kubernetes con Minikube (Local)
   kubernetes:
     runs-on: ubuntu-latest
-
     steps:
     - name: Check out the code
       uses: actions/checkout@v2
 
+    - name: Install Minikube
+      run: |
+        curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        chmod +x minikube
+        sudo mv minikube /usr/local/bin/
+
+    - name: Start Minikube
+      run: minikube start --driver=docker
+
     - name: Set up kubectl
       uses: azure/setup-kubectl@v1
+      with:
+        version: 'latest'
 
-    - name: Configure Kubernetes Cluster
-      run: |
-        kubectl apply -f k8s/
+    - name: Verify Minikube Cluster
+      run: kubectl cluster-info
+
+    - name: Apply Kubernetes Configurations
+      run: kubectl apply -f k8s/
 
     - name: Check Kubernetes Pods
-      run: kubectl get pods
+      run: kubectl get pods -A
 
   # Job para limpieza de la infraestructura en caso de pruebas fallidas
   cleanup:
     runs-on: ubuntu-latest
-
     if: failure()  # Solo se ejecuta si la pipeline falla en alguno de los trabajos anteriores
-
     steps:
     - name: Check out the code
       uses: actions/checkout@v2

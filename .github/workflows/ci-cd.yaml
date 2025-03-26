@@ -16,7 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out the code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v1
@@ -37,11 +39,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out the code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Log in to Docker
       run: |
-        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
     - name: Build Docker image
       run: |
@@ -56,7 +60,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out the code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Docker
       uses: docker/setup-buildx-action@v1
@@ -71,7 +77,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out the code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Ansible
       run: |
@@ -87,7 +95,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out the code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Debug workspace
+      run: ls -R
 
     - name: Install Minikube
       run: |
@@ -107,7 +120,12 @@ jobs:
       run: kubectl cluster-info
 
     - name: Apply Kubernetes Configurations
-      run: kubectl apply -f k8s/
+      run: |
+        if [ -d "k8s/" ]; then
+          kubectl apply -f k8s/
+        else
+          echo "Directory k8s/ not found!" && exit 1
+        fi
 
     - name: Check Kubernetes Pods
       run: kubectl get pods -A
@@ -118,7 +136,9 @@ jobs:
     if: failure()  # Solo se ejecuta si la pipeline falla en alguno de los trabajos anteriores
     steps:
     - name: Check out the code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Terraform Destroy
       run: terraform destroy -auto-approve

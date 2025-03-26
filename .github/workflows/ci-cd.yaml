@@ -33,17 +33,6 @@ jobs:
           cd terraform
           terraform init -upgrade
 
-      - name: Ensure .terraform directory exists
-        run: mkdir -p terraform/.terraform/providers
-
-      - name: Set correct permissions for providers
-        run: |
-          if [ -d "terraform/.terraform/providers" ]; then
-            chmod -R +x terraform/.terraform/providers
-          else
-            echo "⚠️ No providers found, skipping chmod"
-          fi
-
       - name: Format Terraform files
         run: |
           cd terraform
@@ -128,6 +117,11 @@ jobs:
         uses: azure/setup-kubectl@v1
         with:
           version: 'latest'
+
+      - name: Generate Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "$KUBE_CONFIG" > ~/.kube/config
 
       - name: Apply Kubernetes Configurations
         run: kubectl apply -f k8s/

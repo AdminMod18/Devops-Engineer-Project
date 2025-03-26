@@ -22,6 +22,21 @@ jobs:
             exit 1
           fi
 
+      - name: Install Minikube
+        run: |
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+          minikube start --driver=docker
+          echo "✅ Minikube installed and started"
+
+      - name: Export Minikube credentials
+        run: |
+          mkdir -p $HOME/.minikube/profiles/minikube
+          minikube kubectl -- config view --raw > $HOME/.kube/config
+          echo "export KUBE_CERTIFICATE_AUTHORITY=$(cat $HOME/.minikube/ca.crt | base64 -w 0)" >> $GITHUB_ENV
+          echo "export KUBE_CLIENT_CERTIFICATE=$(cat $HOME/.minikube/profiles/minikube/client.crt | base64 -w 0)" >> $GITHUB_ENV
+          echo "export KUBE_CLIENT_KEY=$(cat $HOME/.minikube/profiles/minikube/client.key | base64 -w 0)" >> $GITHUB_ENV
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v1
         with:
@@ -57,6 +72,10 @@ jobs:
         run: |
           cd terraform
           terraform apply -auto-approve tfplan
+        env:
+          TF_VAR_client_certificate: ${{ env.KUBE_CLIENT_CERTIFICATE }}
+          TF_VAR_client_key: ${{ env.KUBE_CLIENT_KEY }}
+          TF_VAR_cluster_ca_certificate: ${{ env.KUBE_CERTIFICATE_AUTHORITY }}
   docker:
     runs-on: ubuntu-latest
     steps:

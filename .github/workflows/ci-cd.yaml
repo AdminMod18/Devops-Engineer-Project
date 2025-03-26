@@ -15,10 +15,10 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v2
 
-      - name: Verify Terraform files exist
+      - name: Verify Terraform directory exists
         run: |
-          if [ ! -f "terraform/main.tf" ]; then
-            echo "Terraform configuration files not found!"
+          if [ ! -d "terraform" ]; then
+            echo "Terraform directory not found!"
             exit 1
           fi
 
@@ -27,14 +27,17 @@ jobs:
         with:
           terraform_version: 1.0.0
 
+      - name: Validate Terraform files
+        run: terraform fmt -check -recursive -chdir=terraform
+
       - name: Terraform Init
         run: terraform init -chdir=terraform
 
       - name: Terraform Plan
-        run: terraform plan -chdir=terraform
+        run: terraform plan -out=tfplan -chdir=terraform
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve -chdir=terraform
+        run: terraform apply -auto-approve tfplan -chdir=terraform
   docker:
     runs-on: ubuntu-latest
     steps:

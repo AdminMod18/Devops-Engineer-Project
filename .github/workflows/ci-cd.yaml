@@ -76,6 +76,10 @@ jobs:
           TF_VAR_client_certificate: ${{ env.KUBE_CLIENT_CERTIFICATE }}
           TF_VAR_client_key: ${{ env.KUBE_CLIENT_KEY }}
           TF_VAR_cluster_ca_certificate: ${{ env.KUBE_CERTIFICATE_AUTHORITY }}
+      - name: Check Kubernetes Status
+        run: |
+          kubectl cluster-info || (echo "⚠️ Kubernetes is not running!"; exit 1)
+
   docker:
     runs-on: ubuntu-latest
     steps:

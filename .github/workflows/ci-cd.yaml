@@ -10,60 +10,55 @@ on:
 
 jobs:
   terraform:
-  runs-on: ubuntu-latest
-  steps:
-    - name: Check out the code
-      uses: actions/checkout@v3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
 
-    - name: Verify Terraform directory exists
-      run: |
-        if [ ! -d "terraform" ]; then
-          echo "❌ Terraform directory not found!"
-          exit 1
-        fi
+      - name: Verify Terraform directory exists
+        run: |
+          if [ ! -d "terraform" ]; then
+            echo "❌ Terraform directory not found!"
+            exit 1
+          fi
 
-    - name: Install Minikube
-      run: |
-        curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-        sudo install minikube-linux-amd64 /usr/local/bin/minikube
-        minikube start --driver=docker
-        mkdir -p ~/.kube && minikube kubectl -- config view --raw > ~/.kube/config
-        echo "✅ Minikube installed and started"
+      - name: Install k3s (lightweight Kubernetes)
+        run: |
+          curl -sfL https://get.k3s.io | sh -
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          echo "KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> $GITHUB_ENV
+          echo "✅ k3s installed successfully"
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_version: 1.0.0
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.0.0
 
-    - name: Initialize Terraform
-      run: |
-        cd terraform
-        terraform init -upgrade
+      - name: Initialize Terraform
+        run: |
+          cd terraform
+          terraform init -upgrade
 
-    - name: Fix plugin permissions
-      run: |
-        chmod -R +x terraform/.terraform
+      - name: Format Terraform files
+        run: |
+          cd terraform
+          terraform fmt -recursive
 
-    - name: Format Terraform files
-      run: |
-        cd terraform
-        terraform fmt -recursive
+      - name: Validate Terraform configuration
+        run: |
+          cd terraform
+          terraform validate
 
-    - name: Validate Terraform configuration
-      run: |
-        cd terraform
-        terraform validate
+      - name: Terraform Plan
+        run: |
+          cd terraform
+          terraform plan -out=tfplan
 
-    - name: Terraform Plan
-      run: |
-        cd terraform
-        terraform plan -out=tfplan
-
-    - name: Terraform Apply
-      if: github.ref == 'refs/heads/main'
-      run: |
-        cd terraform
-        terraform apply -auto-approve tfplan
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd terraform
+          terraform apply -auto-approve tfplan
   docker:
     runs-on: ubuntu-latest
     steps:

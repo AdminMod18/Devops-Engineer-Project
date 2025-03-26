@@ -1,0 +1,27 @@
+---
+- name: Instalar PostgreSQL
+  apt:
+    name: postgresql
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Asegurar que el servicio PostgreSQL esté corriendo
+  service:
+    name: postgresql
+    state: started
+    enabled: true
+
+#- name: Crear una base de datos
+#  become_user: postgres
+#  postgresql_db:
+#    name: my_database
+#    state: present
+
+
+#- name: Crear un usuario en PostgreSQL
+#  become_user: postgres
+#  postgresql_user:
+#    db: my_database
+#    name: my_user
+#    password: my_password
+#    priv: ALL

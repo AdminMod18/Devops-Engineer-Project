@@ -10,52 +10,60 @@ on:
 
 jobs:
   terraform:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v3
+  runs-on: ubuntu-latest
+  steps:
+    - name: Check out the code
+      uses: actions/checkout@v3
 
-      - name: Verify Terraform directory exists
-        run: |
-          if [ ! -d "terraform" ]; then
-            echo "❌ Terraform directory not found!"
-            exit 1
-          fi
+    - name: Verify Terraform directory exists
+      run: |
+        if [ ! -d "terraform" ]; then
+          echo "❌ Terraform directory not found!"
+          exit 1
+        fi
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.0.0
+    - name: Install Minikube
+      run: |
+        curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        sudo install minikube-linux-amd64 /usr/local/bin/minikube
+        minikube start --driver=docker
+        mkdir -p ~/.kube && minikube kubectl -- config view --raw > ~/.kube/config
+        echo "✅ Minikube installed and started"
 
-      - name: Initialize Terraform
-        run: |
-          cd terraform
-          terraform init -upgrade
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 1.0.0
 
-      - name: Fix plugin permissions
-        run: |
-          chmod -R +x terraform/.terraform
+    - name: Initialize Terraform
+      run: |
+        cd terraform
+        terraform init -upgrade
 
-      - name: Format Terraform files
-        run: |
-          cd terraform
-          terraform fmt -recursive
+    - name: Fix plugin permissions
+      run: |
+        chmod -R +x terraform/.terraform
 
-      - name: Validate Terraform configuration
-        run: |
-          cd terraform
-          terraform validate
+    - name: Format Terraform files
+      run: |
+        cd terraform
+        terraform fmt -recursive
 
-      - name: Terraform Plan
-        run: |
-          cd terraform
-          terraform plan -out=tfplan
+    - name: Validate Terraform configuration
+      run: |
+        cd terraform
+        terraform validate
 
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
-        run: |
-          cd terraform
-          terraform apply -auto-approve tfplan
+    - name: Terraform Plan
+      run: |
+        cd terraform
+        terraform plan -out=tfplan
+
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main'
+      run: |
+        cd terraform
+        terraform apply -auto-approve tfplan
   docker:
     runs-on: ubuntu-latest
     steps:

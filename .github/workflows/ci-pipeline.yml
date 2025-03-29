@@ -56,7 +56,6 @@ jobs:
         run: |
           cd terraform
           terraform validate
-
   docker:
     runs-on: ubuntu-latest
     needs: validate
@@ -66,6 +65,11 @@ jobs:
 
       - name: Install Docker-Compose
         run: sudo apt-get update && sudo apt-get install -y docker-compose
+
+      - name: Verify Dockerfile presence
+        run: |
+          ls -l
+          test -f Dockerfile || { echo "Dockerfile not found!"; exit 1; }
 
       - name: Log in to Docker
         env:
@@ -78,7 +82,6 @@ jobs:
         run: |
           docker build -t myapp .
           docker push myapp
-
   test:
     runs-on: ubuntu-latest
     needs: docker

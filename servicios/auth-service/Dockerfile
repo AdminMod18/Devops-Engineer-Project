@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Establece el directorio de trabajo
 WORKDIR /app
 
-# Actualiza e instala paquetes esenciales
+# Actualiza e instala paquetes esenciales en una sola capa
 RUN apt update && \
     apt install -y curl nano python3 python3-pip tzdata postgresql postgresql-contrib && \
     rm -rf /var/lib/apt/lists/*
@@ -19,8 +19,11 @@ RUN ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && \
 # Instala pytest
 RUN pip3 install pytest
 
+# Copia el código fuente al contenedor
+COPY . /app
+
 # Otorga permisos si el pipeline tiene restricciones
 RUN chmod -R 777 /app
 
-# Mantiene el contenedor en ejecución
-CMD ["tail", "-f", "/dev/null"]
+# Ejecuta pytest en la ubicación correcta y mantiene el contenedor activo
+CMD ["sh", "-c", "pytest /app/services/auth-service || true && tail -f /dev/null"]

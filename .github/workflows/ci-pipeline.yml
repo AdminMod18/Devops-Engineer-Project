@@ -75,7 +75,7 @@ jobs:
 
       - name: Verify Dockerfile exists
         run: |
-          ls -l servicios/ || (echo "Dockerfile not found!" && exit 1)
+          ls -l servicios/auth-service || (echo "Dockerfile not found!" && exit 1)
 
       - name: Build and Push Docker image
         run: |

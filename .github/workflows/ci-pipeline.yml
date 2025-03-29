@@ -63,6 +63,13 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v3
 
+      - name: Verify Dockerfile exists
+        run: |
+          if [ ! -f servicios/auth-service/Dockerfile ]; then
+            echo "Dockerfile not found in servicios/auth-service/" >&2
+            exit 1
+          fi
+
       - name: Install Docker-Compose
         run: sudo apt-get update && sudo apt-get install -y docker-compose
 
@@ -73,13 +80,9 @@ jobs:
         run: |
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-      - name: Verify Dockerfile exists
-        run: |
-          ls -l servicios/auth-service || (echo "Dockerfile not found!" && exit 1)
-
       - name: Build and Push Docker image
         run: |
-          docker build -t myapp servicios/
+          docker build -t myapp servicios/auth-service/
           docker push myapp
   test:
     runs-on: ubuntu-latest

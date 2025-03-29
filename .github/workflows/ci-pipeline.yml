@@ -66,11 +66,6 @@ jobs:
       - name: Install Docker-Compose
         run: sudo apt-get update && sudo apt-get install -y docker-compose
 
-      - name: Verify Dockerfile presence
-        run: |
-          ls -l
-          test -f Dockerfile || { echo "Dockerfile not found!"; exit 1; }
-
       - name: Log in to Docker
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -78,9 +73,13 @@ jobs:
         run: |
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
+      - name: Verify Dockerfile exists
+        run: |
+          ls -l servicios/ || (echo "Dockerfile not found!" && exit 1)
+
       - name: Build and Push Docker image
         run: |
-          docker build -t myapp .
+          docker build -t myapp servicios/
           docker push myapp
   test:
     runs-on: ubuntu-latest

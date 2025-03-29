@@ -16,6 +16,9 @@ RUN apt update && \
 RUN ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata
 
+# Instala pytest
+RUN pip3 install pytest
+
 # Copia el código fuente al contenedor
 COPY . /app
 

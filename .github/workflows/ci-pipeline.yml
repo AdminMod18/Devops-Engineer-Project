@@ -10,35 +10,36 @@ on:
 
 jobs:
   validate:
-  runs-on: ubuntu-latest
-  steps:
-    - name: Check out the code
-      uses: actions/checkout@v3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_version: 1.0.0
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.0.0
 
-    - name: Initialize Terraform
-      run: |
-        cd terraform
-        terraform init -upgrade
+      - name: Initialize Terraform
+        run: |
+          cd terraform
+          terraform init -upgrade
 
-    - name: Fix plugin permissions
-      run: |
-        cd terraform
-        chmod -R 755 .terraform || echo "No .terraform directory, skipping chmod"
+      - name: Fix plugin permissions
+        run: |
+          cd terraform
+          chmod -R 755 .terraform || echo "No .terraform directory, skipping chmod"
 
-    - name: Format Terraform files
-      run: |
-        cd terraform
-        terraform fmt -recursive
+      - name: Format Terraform files
+        run: |
+          cd terraform
+          terraform fmt -recursive
 
-    - name: Validate Terraform configuration
-      run: |
-        cd terraform
-        terraform validate
+      - name: Validate Terraform configuration
+        run: |
+          cd terraform
+          terraform validate
+
   docker:
     runs-on: ubuntu-latest
     needs: validate

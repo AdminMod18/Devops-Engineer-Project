@@ -16,14 +16,11 @@ RUN apt update && \
 RUN ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata
 
-# Instala pytest
-RUN pip3 install pytest
-
 # Copia el código fuente al contenedor
 COPY . /app
 
 # Otorga permisos si el pipeline tiene restricciones
 RUN chmod -R 777 /app
 
-# Ejecuta pytest en la ubicación correcta y mantiene el contenedor activo
-CMD ["sh", "-c", "pytest /app/services/auth-service || true && tail -f /dev/null"]
+# Mantiene el contenedor en ejecución
+CMD ["tail", "-f", "/dev/null"]

@@ -1,0 +1,79 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+
+jobs:
+  deploy_infra:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Apply Terraform Configuration
+        run: |
+          cd terraform
+          terraform apply -auto-approve
+
+  deploy_k8s:
+    runs-on: ubuntu-latest
+    needs: deploy_infra
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Install Minikube
+        run: |
+          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          chmod +x minikube
+          sudo mv minikube /usr/local/bin/
+
+      - name: Start Minikube
+        run: minikube start --driver=docker
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v1
+        with:
+          version: 'latest'
+
+      - name: Generate Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "$KUBE_CONFIG" > ~/.kube/config
+
+      - name: Apply Kubernetes Configurations
+        run: kubectl apply -f k8s/
+
+      - name: Check Kubernetes Pods
+        run: kubectl get pods -A
+
+  ansible:
+    runs-on: ubuntu-latest
+    needs: deploy_k8s
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Set up Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Run Ansible Playbook
+        run: |
+          ansible-playbook -i ansible/hosts.ini ansible/playbook.yml || echo "Ansible playbook failed, but continuing."
+
+  cleanup:
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Terraform Destroy
+        run: |
+          cd terraform
+          terraform destroy -auto-approve

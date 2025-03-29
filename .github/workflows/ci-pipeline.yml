@@ -83,7 +83,7 @@ jobs:
       - name: Build and Push Docker image
         run: |
           docker build -t myapp servicios/auth-service/
-          docker push myapp
+          docker run -d --name myapp_container myapp
   test:
     runs-on: ubuntu-latest
     needs: docker

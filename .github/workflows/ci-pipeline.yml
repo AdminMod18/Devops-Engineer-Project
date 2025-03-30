@@ -98,5 +98,5 @@ jobs:
         run: |
           docker-compose -f servicios/auth-service/docker-compose.test.yml up --build -d
           sleep 10  # Asegura que los servicios están arriba antes de correr los tests
-          docker logs $(docker ps -q --filter name=app)  # Ver logs del contenedor de pruebas
+          docker logs $(docker ps -aqf "name=auth-service_app_1" || docker ps -aq | head -n 1) # Ver logs del contenedor de pruebas
           docker-compose -f servicios/auth-service/docker-compose.test.yml down

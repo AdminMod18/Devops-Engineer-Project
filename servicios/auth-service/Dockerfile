@@ -25,6 +25,8 @@ COPY . /app
 # Otorga permisos si el pipeline tiene restricciones
 RUN chmod -R 777 /app
 
+RUN mkdir -p /app/tests
+
 # Mantiene el contenedor en ejecución
 CMD ["sh", "-c", "sleep 5 && pytest docker-compose.test.yml || exit 0"]
 

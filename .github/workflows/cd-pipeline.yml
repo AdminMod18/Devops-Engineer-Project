@@ -21,11 +21,13 @@ jobs:
       - name: Initialize Terraform
         run: |
           cd terraform
+          rm -rf .terraform  # Eliminar cualquier configuración anterior
           terraform init -reconfigure -upgrade
 
       - name: Fix Terraform Provider Permissions
         run: |
-          chmod +x .terraform/providers/registry.terraform.io/hashicorp/kubernetes/2.36.0/linux_amd64/terraform-provider-kubernetes_v2.36.0_x5 || true
+          cd terraform
+          chmod -R +x .terraform  # Dar permisos de ejecución a todos los binarios de Terraform
 
       - name: Apply Terraform Configuration
         run: |

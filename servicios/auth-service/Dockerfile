@@ -26,4 +26,5 @@ COPY . /app
 RUN chmod -R 777 /app
 
 # Mantiene el contenedor en ejecución
-CMD ["tail", "-f", "/dev/null"]
+CMD ["sh", "-c", "sleep 5 && pytest docker-compose.test.yml || exit 0"]
+

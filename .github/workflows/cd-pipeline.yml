@@ -23,10 +23,20 @@ jobs:
           cd terraform
           terraform init -reconfigure -upgrade
 
+      - name: Fix Terraform Provider Permissions
+        run: |
+          chmod +x .terraform/providers/registry.terraform.io/hashicorp/kubernetes/2.36.0/linux_amd64/terraform-provider-kubernetes_v2.36.0_x5 || true
+
       - name: Apply Terraform Configuration
         run: |
           cd terraform
           terraform apply -auto-approve || (terraform init -force-copy && terraform apply -auto-approve)
+
+      - name: Debug Terraform (If Apply Fails)
+        if: failure()
+        run: |
+          cd terraform
+          TF_LOG=DEBUG terraform apply -auto-approve
 
   deploy_k8s:
     runs-on: ubuntu-latest
@@ -49,6 +59,7 @@ jobs:
           mkdir -p ~/.kube
           minikube update-context
           minikube kubectl -- config view --minify > ~/.kube/config
+          export KUBECONFIG=~/.kube/config
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v1

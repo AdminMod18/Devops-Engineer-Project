@@ -26,8 +26,8 @@ jobs:
       - name: Fix Terraform Provider Permissions
         run: |
           cd terraform
-          chmod -R 755 .terraform || true
-          chmod -R +x .terraform/providers || true
+          chmod -R 755 .terraform
+          chmod -R +x .terraform/providers
 
       - name: Debug Terraform Providers
         run: |
@@ -53,7 +53,12 @@ jobs:
           sudo mv minikube /usr/local/bin/
 
       - name: Start Minikube
-        run: minikube start --driver=docker
+        run: |
+          minikube start --driver=docker
+          mkdir -p ~/.minikube/profiles/minikube
+          cp $(minikube profile list --format "{{.Path}}")/client.crt ~/.minikube/profiles/minikube/client.crt
+          cp $(minikube profile list --format "{{.Path}}")/client.key ~/.minikube/profiles/minikube/client.key
+          cp $(minikube profile list --format "{{.Path}}")/ca.crt ~/.minikube/ca.crt
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v1
@@ -63,7 +68,7 @@ jobs:
       - name: Generate Kubeconfig
         run: |
           mkdir -p ~/.kube
-          echo "$KUBE_CONFIG" > ~/.kube/config
+          minikube kubectl -- config view --flatten > ~/.kube/config
 
       - name: Apply Kubernetes Configurations
         run: kubectl apply -f k8s/

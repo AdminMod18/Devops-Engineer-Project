@@ -21,17 +21,23 @@ jobs:
       - name: Initialize Terraform
         run: |
           cd terraform
-          terraform init -upgrade
+          terraform init -reconfigure -upgrade
 
       - name: Fix Terraform Provider Permissions
         run: |
-          chmod -R +x .terraform || true
-          chmod +x .terraform/providers/registry.terraform.io/hashicorp/kubernetes/* || true
+          cd terraform
+          chmod -R 755 .terraform || true
+          chmod -R +x .terraform/providers || true
+
+      - name: Debug Terraform Providers
+        run: |
+          cd terraform
+          ls -la .terraform/providers/registry.terraform.io/hashicorp/kubernetes/
 
       - name: Apply Terraform Configuration
         run: |
           cd terraform
-          terraform apply -auto-approve
+          terraform apply -auto-approve || (terraform init -force-copy && terraform apply -auto-approve)
 
   deploy_k8s:
     runs-on: ubuntu-latest

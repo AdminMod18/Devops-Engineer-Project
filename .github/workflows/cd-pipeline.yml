@@ -21,7 +21,12 @@ jobs:
       - name: Initialize Terraform
         run: |
           cd terraform
-          terraform init
+          terraform init -upgrade
+
+      - name: Fix Terraform Provider Permissions
+        run: |
+          chmod -R +x .terraform || true
+          chmod +x .terraform/providers/registry.terraform.io/hashicorp/kubernetes/* || true
 
       - name: Apply Terraform Configuration
         run: |
@@ -30,7 +35,7 @@ jobs:
 
   deploy_k8s:
     runs-on: ubuntu-latest
-    needs: [deploy_infra]  # ✅ Asegura que deploy_infra se ejecuta primero
+    needs: deploy_infra
     steps:
       - name: Check out the code
         uses: actions/checkout@v3
@@ -42,9 +47,7 @@ jobs:
           sudo mv minikube /usr/local/bin/
 
       - name: Start Minikube
-        run: |
-          minikube start --driver=docker
-          minikube status
+        run: minikube start --driver=docker
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v1
@@ -55,15 +58,6 @@ jobs:
         run: |
           mkdir -p ~/.kube
           echo "$KUBE_CONFIG" > ~/.kube/config
-          chmod 600 ~/.kube/config  # Asegura permisos adecuados
-
-      - name: Wait for Kubernetes to be ready
-        run: |
-          for i in {1..10}; do
-            kubectl get nodes && break
-            echo "Waiting for Kubernetes to be ready..."
-            sleep 10
-          done
 
       - name: Apply Kubernetes Configurations
         run: kubectl apply -f k8s/
@@ -73,7 +67,7 @@ jobs:
 
   ansible:
     runs-on: ubuntu-latest
-    needs: [deploy_k8s]  # ✅ Asegura que deploy_k8s se ejecuta primero
+    needs: deploy_k8s
     steps:
       - name: Check out the code
         uses: actions/checkout@v3
@@ -90,7 +84,6 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     if: failure()
-    needs: [deploy_infra, deploy_k8s, ansible]  # ✅ Ejecuta cleanup solo si hay un fallo en cualquier job anterior
     steps:
       - name: Check out the code
         uses: actions/checkout@v3

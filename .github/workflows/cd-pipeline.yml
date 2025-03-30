@@ -7,11 +7,21 @@ on:
       - completed
 
 jobs:
-  deploy_infra:
+  Terraform:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
         uses: actions/checkout@v3
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.1
+
+      - name: Initialize Terraform
+        run: |
+          cd terraform
+          terraform init
 
       - name: Apply Terraform Configuration
         run: |
@@ -32,7 +42,9 @@ jobs:
           sudo mv minikube /usr/local/bin/
 
       - name: Start Minikube
-        run: minikube start --driver=docker
+        run: |
+          minikube start --driver=docker
+          minikube status
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v1
@@ -43,6 +55,15 @@ jobs:
         run: |
           mkdir -p ~/.kube
           echo "$KUBE_CONFIG" > ~/.kube/config
+          chmod 600 ~/.kube/config  # Asegura permisos adecuados
+
+      - name: Wait for Kubernetes to be ready
+        run: |
+          for i in {1..10}; do
+            kubectl get nodes && break
+            echo "Waiting for Kubernetes to be ready..."
+            sleep 10
+          done
 
       - name: Apply Kubernetes Configurations
         run: kubectl apply -f k8s/

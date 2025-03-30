@@ -39,6 +39,7 @@ jobs:
         run: |
           cd terraform
           TF_LOG=DEBUG terraform apply -auto-approve
+
   deploy_k8s:
     runs-on: ubuntu-latest
     needs: deploy_infra
@@ -72,10 +73,13 @@ jobs:
           version: 'latest'
 
       - name: Apply Kubernetes Configurations
-        run: kubectl apply -f k8s/
+        run: |
+          kubectl apply -f ansible/roles/deploy_auth_tasks/
+          kubectl apply -f ansible/roles/deploy_user_tasks/
 
       - name: Check Kubernetes Pods
         run: kubectl get pods -A
+
   ansible:
     runs-on: ubuntu-latest
     needs: deploy_k8s

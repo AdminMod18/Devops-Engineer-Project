@@ -1,39 +1,24 @@
 name: CI Pipeline
 
 on:
-  workflow_run:
-    workflows: ["CI Pipeline"]
-    types:
-      - completed
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  deploy_infra:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
         uses: actions/checkout@v3
 
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.6.1
-
-      - name: Initialize Terraform
+      - name: Set up Docker permissions
         run: |
-          cd terraform
-          terraform init -reconfigure -upgrade
-
-      - name: Apply Terraform Configuration
-        run: |
-          cd terraform
-          terraform apply -auto-approve || (terraform init -force-copy && terraform apply -auto-approve)
-
-  deploy_k8s:
-    runs-on: ubuntu-latest
-    needs: deploy_infra
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v3
+          sudo usermod -aG docker $USER
+          newgrp docker
 
       - name: Install Minikube
         run: |
@@ -44,47 +29,74 @@ jobs:
       - name: Start Minikube
         run: minikube start --driver=docker
 
-      - name: Configure Kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          minikube update-context
-          minikube kubectl -- config view --minify > ~/.kube/config
+      - name: Verify Minikube
+        run: minikube kubectl -- get pods -A
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v1
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
         with:
-          version: 'latest'
+          terraform_version: 1.0.0
 
-      - name: Apply Kubernetes Configurations
-        run: kubectl apply -f k8s/
-
-      - name: Check Kubernetes Pods
-        run: kubectl get pods -A
-
-  ansible:
-    runs-on: ubuntu-latest
-    needs: deploy_k8s
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v3
-
-      - name: Set up Ansible
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ansible
-
-      - name: Run Ansible Playbook
-        run: |
-          ansible-playbook -i ansible/hosts.ini ansible/playbook.yml || echo "Ansible playbook failed, but continuing."
-
-  cleanup:
-    runs-on: ubuntu-latest
-    if: failure()
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v3
-
-      - name: Terraform Destroy
+      - name: Initialize Terraform
         run: |
           cd terraform
-          terraform destroy -auto-approve
+          terraform init -upgrade
+
+      - name: Fix plugin permissions
+        run: |
+          cd terraform
+          chmod -R 755 .terraform || echo "No .terraform directory, skipping chmod"
+
+      - name: Format Terraform files
+        run: |
+          cd terraform
+          terraform fmt -recursive
+
+      - name: Validate Terraform configuration
+        run: |
+          cd terraform
+          terraform validate
+  docker:
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Verify Dockerfile exists
+        run: |
+          if [ ! -f servicios/auth-service/Dockerfile ]; then
+            echo "Dockerfile not found in servicios/auth-service/" >&2
+            exit 1
+          fi
+
+      - name: Install Docker-Compose
+        run: sudo apt-get update && sudo apt-get install -y docker-compose
+
+      - name: Log in to Docker
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      - name: Build and Push Docker image
+        run: |
+          docker build -t myapp servicios/auth-service/
+          docker run -d --name myapp_container myapp
+  test:
+    runs-on: ubuntu-latest
+    needs: docker
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Install Docker-Compose
+        run: sudo apt-get update && sudo apt-get install -y docker-compose
+
+      - name: Run Tests
+        run: |
+          docker-compose -f servicios/auth-service/docker-compose.test.yml up --build -d
+          sleep 10  # Asegura que los servicios están arriba antes de correr los tests
+          docker logs $(docker ps -aqf "name=auth-service_app_1" || docker ps -aq | head -n 1) # Ver logs del contenedor de pruebas
+          docker-compose -f servicios/auth-service/docker-compose.test.yml down

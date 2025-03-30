@@ -74,8 +74,8 @@ jobs:
 
       - name: Apply Kubernetes Configurations
         run: |
-          kubectl apply -f ansible/roles/deploy_auth/tasks
-          kubectl apply -f ansible/roles/deploy_user/tasks
+          kubectl apply -f servicios/auth-service/
+          kubectl apply -f servicios/auth-service/
 
       - name: Check Kubernetes Pods
         run: kubectl get pods -A

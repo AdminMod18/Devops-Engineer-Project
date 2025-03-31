@@ -53,89 +53,66 @@ jobs:
           minikube start --driver=docker
           minikube addons enable metrics-server
 
-      - name: Wait for Kubernetes API to be Ready
-        run: |
-          for i in {1..10}; do
-            if kubectl cluster-info; then
-              echo "Kubernetes API Server está listo."
-              break
-            fi
-            echo "Esperando que Kubernetes esté listo..."
-            sleep 10
-          done
-
       - name: Apply Namespace
         run: |
           kubectl create namespace auth-namespace || echo "Namespace ya existe"
           kubectl get namespace auth-namespace --no-headers
 
       - name: Apply Kubernetes Configurations
-        run: |
-          cd servicios/auth-service
-          kubectl apply -f deployment.yml
-
-  ansible:
+        run: kubectl apply -f servicios/auth-service/deployment.yml
+ansible:
     runs-on: ubuntu-latest
     needs: deploy_k8s
     steps:
       - name: Check out the code
         uses: actions/checkout@v3
 
-      - name: Install Minikube if not installed
+      - name: Instalar Minikube (nuevamente si es necesario)
         run: |
-          if ! command -v minikube &> /dev/null; then
-            echo "Minikube no encontrado. Instalando..."
-            curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-            chmod +x minikube
-            sudo mv minikube /usr/local/bin/
-          else
-            echo "Minikube ya está instalado."
-          fi
+          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          chmod +x minikube
+          sudo mv minikube /usr/local/bin/
 
-      - name: Verify and Restart Minikube if needed
+      - name: Verificar Minikube y reiniciar si es necesario
         run: |
-          if ! minikube status | grep -q "Running"; then
+          if ! minikube status; then
             echo "Minikube no está corriendo. Intentando iniciarlo..."
             minikube start --driver=docker
           fi
+          echo "Verificando contexto de kubectl..."
           kubectl config use-context minikube
           kubectl cluster-info
 
-      - name: Wait for Kubernetes to be Ready
+      - name: Esperar a que Kubernetes esté listo
         run: |
           for i in {1..10}; do
-            if kubectl get nodes; then
-              echo "Kubernetes está listo."
-              break
-            fi
+            kubectl get nodes && break
             echo "Esperando a que Kubernetes esté listo..."
             sleep 10
           done
 
-      - name: Install Ansible
+      - name: Instalar Ansible
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible
 
-      - name: Configure sudo for Ansible
-        run: |
-          echo "$(whoami) ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$(whoami)
+      - name: Configurar sudo sin contraseña
+        run: echo "$(whoami) ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$(whoami)
 
-      - name: Create Namespace if not exists
+      - name: Crear namespace auth-namespace si no existe
         run: |
           kubectl create namespace auth-namespace --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Verify Kubernetes Connection
+      - name: Verificar conexión con Kubernetes antes de aplicar los manifiestos
         run: |
-          if ! kubectl cluster-info; then
+          kubectl cluster-info dump > /dev/null
+          if [ $? -ne 0 ]; then
             echo "Error: No se puede conectar al API Server de Kubernetes. Abortando."
             exit 1
           fi
 
-      - name: Run Ansible Playbook
-        run: |
-          ansible-playbook -i ansible/hosts.ini ansible/playbook.yml --become || (echo "Ansible falló. Verifica errores." && exit 1)
-
+      - name: Ejecutar Ansible Playbook
+        run: ansible-playbook -i ansible/hosts.ini ansible/playbook.yml --become
   cleanup:
     runs-on: ubuntu-latest
     if: failure()

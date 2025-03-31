@@ -72,7 +72,7 @@ jobs:
       - name: Apply Kubernetes Configurations
         run: |
           cd servicios/auth-service
-          kubectl apply -f deployment.yml --validate=false  # Desactiva la validación aquí
+          kubectl apply -f deployment.yml
 
   ansible:
     runs-on: ubuntu-latest
@@ -134,7 +134,7 @@ jobs:
 
       - name: Run Ansible Playbook
         run: |
-          ansible-playbook -i ansible/hosts.ini ansible/playbook.yml --become --validate=false || (echo "Ansible falló. Verifica errores." && exit 1)
+          ansible-playbook -i ansible/hosts.ini ansible/playbook.yml --become || (echo "Ansible falló. Verifica errores." && exit 1)
 
   cleanup:
     runs-on: ubuntu-latest

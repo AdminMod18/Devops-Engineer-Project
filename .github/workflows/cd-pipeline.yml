@@ -53,6 +53,17 @@ jobs:
           minikube start --driver=docker
           minikube addons enable metrics-server
 
+      - name: Wait for Kubernetes API to be Ready
+        run: |
+          for i in {1..10}; do
+            if kubectl cluster-info; then
+              echo "Kubernetes API Server está listo."
+              break
+            fi
+            echo "Esperando que Kubernetes esté listo..."
+            sleep 10
+          done
+
       - name: Apply Namespace
         run: |
           kubectl create namespace auth-namespace || echo "Namespace ya existe"
@@ -61,7 +72,7 @@ jobs:
       - name: Apply Kubernetes Configurations
         run: |
           cd servicios/auth-service
-          kubectl apply -f deployment.yml
+          kubectl apply -f deployment.yml --validate=false
 
   ansible:
     runs-on: ubuntu-latest

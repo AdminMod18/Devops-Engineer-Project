@@ -96,6 +96,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ansible
 
+      - name: Configurar sudo sin contraseña
+        run: echo "$(whoami) ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$(whoami)
+
       - name: Crear namespace auth-namespace si no existe
         run: |
           kubectl create namespace auth-namespace --dry-run=client -o yaml | kubectl apply -f -
@@ -109,7 +112,7 @@ jobs:
           fi
 
       - name: Ejecutar Ansible Playbook
-        run: ansible-playbook -i ansible/hosts.ini ansible/playbook.yml
+        run: ansible-playbook -i ansible/hosts.ini ansible/playbook.yml --become
   cleanup:
     runs-on: ubuntu-latest
     if: failure()

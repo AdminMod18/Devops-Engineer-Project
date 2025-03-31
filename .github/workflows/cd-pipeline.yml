@@ -59,7 +59,9 @@ jobs:
           kubectl get namespace auth-namespace --no-headers
 
       - name: Apply Kubernetes Configurations
-        run: kubectl apply -f servicios/auth-service/deployment.yml
+        run: |
+          cd servicios/auth-service
+          kubectl apply -f deployment.yml
 
   ansible:
     runs-on: ubuntu-latest
@@ -68,7 +70,7 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v3
 
-      - name: Instalar Minikube (si es necesario)
+      - name: Install Minikube if not installed
         run: |
           if ! command -v minikube &> /dev/null; then
             echo "Minikube no encontrado. Instalando..."
@@ -79,17 +81,16 @@ jobs:
             echo "Minikube ya está instalado."
           fi
 
-      - name: Verificar y reiniciar Minikube si es necesario
+      - name: Verify and Restart Minikube if needed
         run: |
           if ! minikube status | grep -q "Running"; then
             echo "Minikube no está corriendo. Intentando iniciarlo..."
             minikube start --driver=docker
           fi
-          echo "Configurando kubectl para usar el contexto de Minikube..."
           kubectl config use-context minikube
           kubectl cluster-info
 
-      - name: Esperar a que Kubernetes esté listo
+      - name: Wait for Kubernetes to be Ready
         run: |
           for i in {1..10}; do
             if kubectl get nodes; then
@@ -100,28 +101,29 @@ jobs:
             sleep 10
           done
 
-      - name: Instalar Ansible
+      - name: Install Ansible
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible
 
-      - name: Configurar sudo sin contraseña para Ansible
+      - name: Configure sudo for Ansible
         run: echo "$(whoami) ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$(whoami)
 
-      - name: Crear namespace auth-namespace si no existe
+      - name: Create Namespace if not exists
         run: |
           kubectl create namespace auth-namespace --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Verificar conexión con Kubernetes antes de aplicar los manifiestos
+      - name: Verify Kubernetes Connection
         run: |
           if ! kubectl cluster-info; then
             echo "Error: No se puede conectar al API Server de Kubernetes. Abortando."
             exit 1
           fi
 
-      - name: Ejecutar Ansible Playbook
+      - name: Run Ansible Playbook
         run: |
           ansible-playbook -i ansible/hosts.ini ansible/playbook.yml --become || (echo "Ansible falló. Verifica errores." && exit 1)
+
   cleanup:
     runs-on: ubuntu-latest
     if: failure()

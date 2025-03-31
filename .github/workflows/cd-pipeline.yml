@@ -28,6 +28,7 @@ jobs:
         run: |
           cd terraform
           terraform apply -auto-approve || (terraform init -force-copy && terraform apply -auto-approve)
+
   deploy_k8s:
     runs-on: ubuntu-latest
     needs: deploy_infra
@@ -54,13 +55,12 @@ jobs:
 
       - name: Apply Namespace
         run: |
-          kubectl apply -f servicios/auth-service/namespace.yml
-          echo "Waiting for namespace to be ready..."
-          sleep 5  # Opcional, da tiempo a que el namespace esté disponible
+          kubectl create namespace auth-namespace || echo "Namespace ya existe"
           kubectl get namespace auth-namespace --no-headers
 
       - name: Apply Kubernetes Configurations
         run: kubectl apply -f servicios/auth-service/deployment.yml
+
   ansible:
     runs-on: ubuntu-latest
     needs: deploy_k8s

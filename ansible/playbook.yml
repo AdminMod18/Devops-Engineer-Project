@@ -6,7 +6,7 @@
     - deploy_user
     - monitoring
     - networking
-    - database
+    #- database
     - security
     - logging
     - backup

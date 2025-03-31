@@ -67,17 +67,18 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v3
 
-      - name: Instalar Minikube (si es necesario)
+      - name: Instalar Minikube (nuevamente si es necesario)
         run: |
-          if ! command -v minikube &> /dev/null; then
-            curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-            chmod +x minikube
-            sudo mv minikube /usr/local/bin/
-          fi
+          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          chmod +x minikube
+          sudo mv minikube /usr/local/bin/
 
-      - name: Verificar Minikube y Kubernetes
+      - name: Verificar Minikube
         run: |
           minikube status || minikube start --driver=docker
+
+      - name: Configurar kubectl
+        run: |
           kubectl config use-context minikube
           kubectl get nodes
 
@@ -95,8 +96,7 @@ jobs:
           sudo apt-get install -y ansible
 
       - name: Ejecutar Ansible Playbook
-        run: |
-          ansible-playbook -i ansible/hosts.ini ansible/playbook.yml --become
+        run: ansible-playbook -i ansible/hosts.ini ansible/playbook.yml  
   cleanup:
     runs-on: ubuntu-latest
     if: failure()

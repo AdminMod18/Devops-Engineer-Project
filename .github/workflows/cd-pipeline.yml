@@ -61,6 +61,7 @@ jobs:
       - name: Apply Kubernetes Configurations
         run: kubectl apply -f servicios/auth-service/deployment.yml
 
+  jobs:
   ansible:
     runs-on: ubuntu-latest
     needs: deploy_k8s
@@ -68,14 +69,36 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v3
 
-      - name: Set up Ansible
+      - name: Instalar Minikube (nuevamente si es necesario)
+        run: |
+          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          chmod +x minikube
+          sudo mv minikube /usr/local/bin/
+
+      - name: Verificar Minikube
+        run: |
+          minikube status || minikube start --driver=docker
+
+      - name: Configurar kubectl
+        run: |
+          kubectl config use-context minikube
+          kubectl get nodes
+
+      - name: Esperar a que Kubernetes esté listo
+        run: |
+          for i in {1..10}; do
+            kubectl get nodes && break
+            echo "Esperando a que Kubernetes esté listo..."
+            sleep 10
+          done
+
+      - name: Instalar Ansible
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible
 
-      - name: Run Ansible Playbook
+      - name: Ejecutar Ansible Playbook
         run: ansible-playbook -i ansible/hosts.ini ansible/playbook.yml
-
   cleanup:
     runs-on: ubuntu-latest
     if: failure()

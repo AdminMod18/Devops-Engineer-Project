@@ -21,26 +21,15 @@ jobs:
       - name: Initialize Terraform
         run: |
           cd terraform
-          rm -rf .terraform  # Eliminar cualquier configuración anterior
+          rm -rf .terraform
           terraform init -reconfigure -upgrade
-
-      - name: Fix Terraform Provider Permissions
-        run: |
-          cd terraform
-          chmod -R +x .terraform  # Dar permisos de ejecución a todos los binarios de Terraform
 
       - name: Apply Terraform Configuration
         run: |
           cd terraform
           terraform apply -auto-approve || (terraform init -force-copy && terraform apply -auto-approve)
 
-      - name: Debug Terraform (If Apply Fails)
-        if: failure()
-        run: |
-          cd terraform
-          TF_LOG=DEBUG terraform apply -auto-approve
-
-    deploy_k8s:
+  deploy_k8s:
     runs-on: ubuntu-latest
     needs: deploy_infra
     steps:
@@ -59,6 +48,9 @@ jobs:
           chmod +x minikube
           sudo mv minikube /usr/local/bin/
 
+      - name: Start Docker
+        run: sudo systemctl start docker
+
       - name: Start Minikube
         run: |
           minikube start --driver=docker
@@ -67,17 +59,18 @@ jobs:
       - name: Configure Kubeconfig
         run: |
           export KUBECONFIG=$HOME/.kube/config
-          minikube update-context || echo "Failed to update context"
-          kubectl config use-context minikube || echo "Failed to set context"
+          minikube update-context
+          kubectl config use-context minikube
 
       - name: Debug Kubernetes Connection
         run: |
-          kubectl cluster-info || echo "Kubernetes no disponible"
-          kubectl get nodes || echo "No se encontraron nodos"
-          kubectl get pods -A || echo "No hay pods en ejecución"
+          kubectl cluster-info
+          kubectl get nodes
+          kubectl get pods -A
 
       - name: Apply Kubernetes Configurations
         run: kubectl apply -f servicios/auth-service/deployment.yml
+
   ansible:
     runs-on: ubuntu-latest
     needs: deploy_k8s
@@ -91,8 +84,7 @@ jobs:
           sudo apt-get install -y ansible
 
       - name: Run Ansible Playbook
-        run: |
-          ansible-playbook -i ansible/hosts.ini ansible/playbook.yml || echo "Ansible playbook failed, but continuing."
+        run: ansible-playbook -i ansible/hosts.ini ansible/playbook.yml
 
   cleanup:
     runs-on: ubuntu-latest

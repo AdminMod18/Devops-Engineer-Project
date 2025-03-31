@@ -15,6 +15,6 @@ spec:
       containers:
         - name: auth-service
           image: auth-service:v1
-          imagePullPolicy: Never  # Indica que NO intente descargar la imagen
+          imagePullPolicy: Always  # Indica que NO intente descargar la imagen
           ports:
             - containerPort: 3000

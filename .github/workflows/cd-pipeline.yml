@@ -73,14 +73,15 @@ jobs:
           chmod +x minikube
           sudo mv minikube /usr/local/bin/
 
-      - name: Verificar Minikube
+      - name: Verificar Minikube y reiniciar si es necesario
         run: |
-          minikube status || minikube start --driver=docker
-
-      - name: Configurar kubectl
-        run: |
+          if ! minikube status; then
+            echo "Minikube no está corriendo. Intentando iniciarlo..."
+            minikube start --driver=docker
+          fi
+          echo "Verificando contexto de kubectl..."
           kubectl config use-context minikube
-          kubectl get nodes
+          kubectl cluster-info
 
       - name: Esperar a que Kubernetes esté listo
         run: |
@@ -99,8 +100,16 @@ jobs:
         run: |
           kubectl create namespace auth-namespace --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Verificar conexión con Kubernetes antes de aplicar los manifiestos
+        run: |
+          kubectl cluster-info dump > /dev/null
+          if [ $? -ne 0 ]; then
+            echo "Error: No se puede conectar al API Server de Kubernetes. Abortando."
+            exit 1
+          fi
+
       - name: Ejecutar Ansible Playbook
-        run: ansible-playbook -i ansible/hosts.ini ansible/playbook.yml 
+        run: ansible-playbook -i ansible/hosts.ini ansible/playbook.yml
   cleanup:
     runs-on: ubuntu-latest
     if: failure()

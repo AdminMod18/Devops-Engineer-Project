@@ -60,7 +60,7 @@ jobs:
 
       - name: Apply Kubernetes Configurations
         run: kubectl apply -f servicios/auth-service/deployment.yml
-ansible:
+  ansible:
     runs-on: ubuntu-latest
     needs: deploy_k8s
     steps:

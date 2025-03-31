@@ -99,8 +99,8 @@ jobs:
         run: |
           kubectl create namespace auth-namespace --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Ejecutar Ansible Playbook con privilegios
-        run: ansible-playbook -i ansible/hosts.ini ansible/playbook.yml --become
+      - name: Ejecutar Ansible Playbook
+        run: ansible-playbook -i ansible/hosts.ini ansible/playbook.yml 
   cleanup:
     runs-on: ubuntu-latest
     if: failure()
